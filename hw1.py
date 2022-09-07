@@ -21,6 +21,14 @@ def get_ngrams(n: int, text: List[str]) -> Generator[Tuple[str, Tuple[str, ...]]
     start_text.extend(text)
     start_text.append(END_TOKEN)
 
+    #This basically creates arrays shifted by a position i which allows us to create the pairings between the word and the context
+    ngram_list = list(zip(*[start_text[i:] for i in range(n)]))
+
+    for i in range(len(ngram_list)):
+        ngram = ngram_list[i]
+        ngram_list[i] = tuple((ngram[n - 1], tuple(ngram[: n - 1])))
+    
+    return ngram_list
 
 # Loads and tokenizes a corpus
 # corpus_path is a string
@@ -43,7 +51,12 @@ def load_corpus(corpus_path: str) -> List[List[str]]:
 # corpus_path is a string
 # Returns an NGramLM
 def create_ngram_lm(n: int, corpus_path: str) -> 'NGramLM':
-    pass
+    load_corpus(corpus_path)
+    ngram_model = NGramLM(n)
+    sentences = load_corpus(corpus_path)
+    for text in sentences:
+        ngram_model.update(text)
+    return ngram_model
 
 
 # An n-gram language model
@@ -58,7 +71,11 @@ class NGramLM:
     # text is a list of strings
     # No return value
     def update(self, text: List[str]) -> None:
-        pass
+        self.vocabulary.update(set(text))
+        for ngram in get_ngrams(self.n, text):
+            self.ngram_counts[ngram] = self.ngram_counts.get(ngram, 0) + 1
+            self.context_counts[ngram[1]] = self.context_counts.get(ngram[1], 0) + 1
+        
 
     # Calculates the MLE probability of an n-gram
     # word is a string
@@ -118,4 +135,4 @@ s1 = 'God has given it to me, let him who touches it beware!'
 s2 = 'Where is the prince, my Dauphin?'
 
 corpus_path = "/Users/jayasuryaagovindraj/Documents/NLP Assignments/Assignment 1/Programming/shakespeare.txt"
-load_corpus(corpus_path)
+model = create_ngram_lm(3, corpus_path)
