@@ -21,18 +21,20 @@ def get_ngrams(n: int, text: List[str]) -> Generator[Tuple[str, Tuple[str, ...]]
     start_text.extend(text)
     start_text.append(END_TOKEN)
 
-    #This basically creates arrays shifted by a position i which allows us to create the pairings between the word and the context
+    # This basically creates arrays shifted by a position i which allows us to create the pairings between the word and the context
     ngram_list = list(zip(*[start_text[i:] for i in range(n)]))
 
     for i in range(len(ngram_list)):
         ngram = ngram_list[i]
         ngram_list[i] = tuple((ngram[n - 1], tuple(ngram[: n - 1])))
-    
+
     return ngram_list
 
 # Loads and tokenizes a corpus
 # corpus_path is a string
 # Returns a list of sentences, where each sentence is a list of strings
+
+
 def load_corpus(corpus_path: str) -> List[List[str]]:
     corpus = open(corpus_path).read()
     paragraphs = corpus.split("\n\n")
@@ -40,11 +42,11 @@ def load_corpus(corpus_path: str) -> List[List[str]]:
     for paragraph in paragraphs:
         sentence = sent_tokenize(paragraph)
         sentences.extend(sentence)
-    
+
     for i in range(len(sentences)):
         sentences[i] = word_tokenize(sentences[i])
     return sentences
-    
+
 
 # Builds an n-gram model from a corpus
 # n is a (non-negative) int
@@ -72,25 +74,41 @@ class NGramLM:
     # No return value
     def update(self, text: List[str]) -> None:
         self.vocabulary.update(set(text))
+        self.vocabulary.add("</s>")
         for ngram in get_ngrams(self.n, text):
             self.ngram_counts[ngram] = self.ngram_counts.get(ngram, 0) + 1
-            self.context_counts[ngram[1]] = self.context_counts.get(ngram[1], 0) + 1
-        
+            self.context_counts[ngram[1]] = self.context_counts.get(
+                ngram[1], 0) + 1
 
     # Calculates the MLE probability of an n-gram
     # word is a string
     # context is a tuple of strings
     # delta is an float
     # Returns a float
-    def get_ngram_prob(self, word: str, context: Tuple[str, ...], delta= .0) -> float:
-        pass
+
+    def get_ngram_prob(self, word: str, context: Tuple[str, ...], delta=.0) -> float:
+        if delta == 0:
+            if self.context_counts.get(context, 0) == 0:
+                return 1/len(self.vocabulary)
+            return self.ngram_counts.get((word, context), 0)/self.context_counts[context]
+        else:
+            n_gram_laplace_prob = (self.ngram_counts.get((word, context), 0) + delta)/(
+                self.context_counts.get(context, 0) + (delta * len(self.vocabulary)))
+            return n_gram_laplace_prob
 
     # Calculates the log probability of a sentence
     # sent is a list of strings
     # delta is a float
     # Returns a float
     def get_sent_log_prob(self, sent: List[str], delta=.0) -> float:
-        pass
+        prob_sum = 0
+        for ngram in get_ngrams(self.n, sent):
+            ngram_prob = self.get_ngram_prob(ngram[0], ngram[1])
+            if ngram_prob == 0:
+                prob_sum += -math.inf
+            else:
+                prob_sum += math.log(ngram_prob, 2)
+        return prob_sum
 
     # Calculates the perplexity of a language model on a test corpus
     # corpus is a list of lists of strings
@@ -134,5 +152,11 @@ class NGramLM:
 s1 = 'God has given it to me, let him who touches it beware!'
 s2 = 'Where is the prince, my Dauphin?'
 
-corpus_path = "/Users/jayasuryaagovindraj/Documents/NLP Assignments/Assignment 1/Programming/shakespeare.txt"
+# corpus_path = "/Users/jayasuryaagovindraj/Documents/NLP Assignments/Assignment 1/Programming/shakespeare.txt"
+corpus_path = "/Users/jayasuryaagovindraj/Documents/NLP Assignments/Assignment 1/Programming/warpeace.txt"
 model = create_ngram_lm(3, corpus_path)
+sentence1 = 'God has given it to me, let him who touches it beware!'
+sentence2 = 'Where is the prince, my Dauphin?'
+
+probability1 = model.get_sent_log_prob(word_tokenize(sentence2), delta=0)
+print(probability1)
