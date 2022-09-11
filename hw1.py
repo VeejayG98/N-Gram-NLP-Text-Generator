@@ -90,7 +90,6 @@ class NGramLM:
         if delta == 0:
             if self.context_counts.get(context, 0) == 0:
                 return 1/len(self.vocabulary)
-            # print(self.ngram_counts.get((word, context), 0), self.context_counts[context])
             return self.ngram_counts.get((word, context), 0)/self.context_counts[context]
         else:
             n_gram_laplace_prob = (self.ngram_counts.get((word, context), 0) + delta)/(
@@ -154,13 +153,18 @@ class NGramLM:
         while length < max_length:
             test1 = [generated_text[-i] for i in range(1, self.n - 1)]
             test2 = generated_text[-(self.n - 1)]
-            next_word = self.generate_random_word(tuple(generated_text[-(self.n - 1) :]), delta)
+            if self.n == 1:
+                context = ()
+            else:
+                context = tuple(generated_text[-(self.n - 1) :])
+            next_word = self.generate_random_word(context, delta)
             length += 1
+            generated_text.append(next_word)
             if next_word == '</s>':
                 # isEndToken = True
                 break
-            generated_text.append(next_word)
-        return ' '.join(generated_text[self.n-1:])
+            
+        return ' '.join(generated_text[self.n - 1 :])
 
 
 def main(corpus_path: str, delta: float, seed: int):
@@ -201,21 +205,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     random.seed(args.seed)
     main(args.corpus_path, args.delta, args.seed)
-
-
-# s1 = 'God has given it to me, let him who touches it beware!'
-# s2 = 'Where is the prince, my Dauphin?'
-
-# # corpus_path = "/Users/jayasuryaagovindraj/Documents/NLP Assignments/Assignment 1/Programming/shakespeare.txt"
-# corpus_path = "/Users/jayasuryaagovindraj/Documents/NLP Assignments/Assignment 1/Programming/warpeace.txt"
-# model = create_ngram_lm(3, corpus_path)
-# sentence1 = 'God has given it to me, let him who touches it beware!'
-# sentence2 = 'Where is the prince, my Dauphin?'
-
-# # probability1 = model.get_sent_log_prob(word_tokenize(sentence2), delta=0)
-# # print(probability1)
-
-# # sentences = load_corpus(corpus_path)
-# # print(model.get_perplexity(sentences))
-# # print(model.get_perplexity([word_tokenize(s1), word_tokenize(s2)]))
-# print(model.get_perplexity([word_tokenize(s1)]))
