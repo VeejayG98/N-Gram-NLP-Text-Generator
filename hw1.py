@@ -7,7 +7,6 @@ from typing import List
 from typing import Tuple
 from typing import Generator
 import nltk
-# nltk.download('punkt')
 
 
 # Generator for all n-grams in text
@@ -54,7 +53,6 @@ def load_corpus(corpus_path: str) -> List[List[str]]:
 # corpus_path is a string
 # Returns an NGramLM
 def create_ngram_lm(n: int, corpus_path: str) -> 'NGramLM':
-    load_corpus(corpus_path)
     ngram_model = NGramLM(n)
     sentences = load_corpus(corpus_path)
     for text in sentences:
